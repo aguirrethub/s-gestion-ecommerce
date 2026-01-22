@@ -17,11 +17,13 @@ func main() {
 
 	productRepo := memory.NewProductRepo()
 	customerRepo := memory.NewCustomerRepo()
+	cartRepo := memory.NewCartRepo()
 
 	for {
 		fmt.Println("\n=== Sistema de Gestión de e-commerce (CLI) ===")
 		fmt.Println("1) Productos")
 		fmt.Println("2) Clientes")
+		fmt.Println("3) Carrito")
 		fmt.Println("0) Salir")
 		fmt.Print("Opción: ")
 
@@ -32,6 +34,8 @@ func main() {
 			productsMenu(reader, productRepo)
 		case "2":
 			customersMenu(reader, customerRepo)
+		case "3":
+			cartMenu(reader, cartRepo, productRepo)
 		case "0":
 			fmt.Println("Saliendo...")
 			return
@@ -114,6 +118,69 @@ func customersMenu(reader *bufio.Reader, repo usecase.CustomerRepository) {
 			}
 		case "0":
 			return
+		default:
+			fmt.Println("Opción inválida.")
+		}
+	}
+}
+
+func cartMenu(reader *bufio.Reader, cartRepo usecase.CartRepository, productRepo usecase.ProductRepositoryForCart) {
+	customerID := readInt(reader, "CustomerID: ")
+
+	for {
+		fmt.Println("\n--- Carrito ---")
+		fmt.Println("1) Ver carrito")
+		fmt.Println("2) Agregar producto al carrito")
+		fmt.Println("3) Quitar producto del carrito")
+		fmt.Println("4) Vaciar carrito")
+		fmt.Println("5) Total")
+		fmt.Println("0) Volver")
+		fmt.Print("Opción: ")
+
+		op := readLine(reader)
+
+		switch op {
+		case "1":
+			cart := usecase.ViewCart(cartRepo, customerID)
+
+			// OJO: esto asume que tu domain.Cart tiene un slice llamado Items.
+			// Si se llama distinto (ej: Lines, Products, etc.), pegá domain/cart.go y lo ajusto.
+			if len(cart.Items) == 0 {
+				fmt.Println("Carrito vacío.")
+				continue
+			}
+			for _, it := range cart.Items {
+				fmt.Printf("ProdID:%d | %s | $%.2f | Cant:%d | Subtotal:$%.2f\n",
+					it.ProductID, it.Name, it.Price, it.Quantity, it.Price*float64(it.Quantity))
+			}
+			fmt.Printf("TOTAL: $%.2f\n", usecase.CartTotal(cartRepo, customerID))
+
+		case "2":
+			productID := readInt(reader, "ProductID: ")
+			qty := readInt(reader, "Cantidad: ")
+
+			_, err := usecase.AddProductToCart(cartRepo, productRepo, customerID, productID, qty)
+			if err != nil {
+				fmt.Println("Error:", err)
+				continue
+			}
+			fmt.Println("Producto agregado al carrito.")
+
+		case "3":
+			productID := readInt(reader, "ProductID a quitar: ")
+			usecase.RemoveProductFromCart(cartRepo, customerID, productID)
+			fmt.Println("Producto quitado (si existía).")
+
+		case "4":
+			usecase.ClearCart(cartRepo, customerID)
+			fmt.Println("Carrito vaciado.")
+
+		case "5":
+			fmt.Printf("TOTAL: $%.2f\n", usecase.CartTotal(cartRepo, customerID))
+
+		case "0":
+			return
+
 		default:
 			fmt.Println("Opción inválida.")
 		}

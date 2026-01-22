@@ -1,18 +1,10 @@
 package domain
 
-import "errors"
-
 type Customer struct {
 	ID    int
 	Name  string
 	Email string
 }
-
-var (
-	ErrInvalidCustomerID = errors.New("ID de cliente inválido")
-	ErrEmptyCustomerName = errors.New("nombre de cliente vacío")
-	ErrInvalidEmail      = errors.New("email inválido")
-)
 
 func ValidateCustomer(c Customer) error {
 	if c.ID <= 0 {
@@ -21,17 +13,28 @@ func ValidateCustomer(c Customer) error {
 	if c.Name == "" {
 		return ErrEmptyCustomerName
 	}
-	if c.Email == "" || !containsAt(c.Email) {
+	if !isValidEmailBasic(c.Email) {
 		return ErrInvalidEmail
 	}
 	return nil
 }
 
-func containsAt(email string) bool {
+func isValidEmailBasic(email string) bool {
+	if email == "" {
+		return false
+	}
+
+	hasAt := false
+	hasDot := false
+
 	for _, ch := range email {
 		if ch == '@' {
-			return true
+			hasAt = true
+		}
+		if ch == '.' {
+			hasDot = true
 		}
 	}
-	return false
+
+	return hasAt && hasDot
 }

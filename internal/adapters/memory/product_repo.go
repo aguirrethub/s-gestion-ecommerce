@@ -25,3 +25,21 @@ func (r *ProductRepo) List() []domain.Product {
 	}
 	return out
 }
+
+// 👇 ESTOS DOS MÉTODOS SON NUEVOS
+
+func (r *ProductRepo) GetByID(id int) (domain.Product, error) {
+	p, ok := r.byID[id]
+	if !ok {
+		return domain.Product{}, domain.ErrInvalidID
+	}
+	return p, nil
+}
+
+func (r *ProductRepo) Update(p domain.Product) error {
+	if _, exists := r.byID[p.ID]; !exists {
+		return domain.ErrInvalidID
+	}
+	r.byID[p.ID] = p
+	return nil
+}
